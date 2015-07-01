@@ -10,5 +10,5 @@ Command line tools:
 
 Contributions are welcomed.
 
-Source code in Scriptol is compiled to PHP (or JavaScript if the sames functions are supported).
+Source code in Scriptol is compiled to PHP (or JavaScript if the same functions are supported).
 
