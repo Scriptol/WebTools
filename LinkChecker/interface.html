@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8>
+<title>Link Checker</title>
+<link type="text/css" href="css/interface.css" rel="stylesheet">
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+<script type="text/javascript">
+var socket = io.connect();
+function notification(content)
+{
+	var x=document.getElementById("storage");
+	x.innerHTML += content + '<br>' ;
+    console.log(content);	
+}
+socket.on('notification', function(x) { notification(x); });	
+function callserver()
+{
+	var short = document.getElementById("short").checked;
+	var fast = document.getElementById("fast").checked;
+	var verbose = document.getElementById("verbose").checked;
+	var parameters = "";
+	if(short) parameters += ' -s';
+	if(fast) parameters += ' -f';
+	if(verbose) parameters += ' -v';
+	socket.emit('interface', parameters);
+}	
+</script>
+</head>
+
+<body>
+<div class="container">
+<div class="span12">
+	<img class="h1" src="css/scriptol.gif" width="330" height="42">
+</div>
+<div class="span12">
+ <div class="url">
+   <label for="url">Site: </label><input type="text" id="url" size="40" style="min-width:320px" value="">
+		<select name="urls"></select>
+		<input type="button" value="Start">
+ </div>
+</div>
+<div class="span12">
+<hr>
+  <div class="options">
+   <label for="short">Short list</label>
+   <input type="checkbox" name="short" value="false" id="short">
+   <label for="fast">Faster</label>
+   <input type="checkbox" name="fast" value="false" id="fast">
+   <label for="verbose">Verbose</label>
+   <input type="checkbox" name="verbose" value="false" id="verbose">
+  </div>
+<hr>  
+</div>
+
+<div class="span12">
+<div class="panel">
+	<fieldset id="results" class="results"><legend>Results</legend>
+	<div id="storage">
+	</div>
+	</fieldset>
+</div>
+</div>
+
+</div> <!--container-->
+
+<div class="footer">&copy; 2008-2012 Scriptol.com & Denis Sureau</div>
+
+</body>
+</html>

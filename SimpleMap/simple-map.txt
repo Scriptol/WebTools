@@ -1,0 +1,120 @@
+
+Simple Map
+Site Map Generator, compatible with Google and any search engine.
+Produces XML, text, and HTML site maps.
+Free and open source under the Mozilla 1.1 licence
+(c) Copyright 2006/2015 by Denis G. Sureau
+www.scriptol.com 
+  
+Overview
+It is a sitemap generator and checker. It parses recursively the content of a web site, from the main page to each page that is linked, in the goal to build a list of all pages to be referenced by search engines.
+The program works locally on the image of the site.
+Once the map being generated, you can edit it with the built-in viewer (or any text editor or XML editor), and then upload it directly at root of your site (or at root of your space on a shared site). 
+And then you must register the map at Google, Yahoo and other search engine if it is a XML file.
+
+Legal
+The program is free and open source under the Mozilla 1.1 licence.
+You can use it and distribute it freely. If you change the source (smap.sol file and sources of the GUI), you must maintain the copyright header and all copyright notice with author's name displayed by the programs.
+The sources even modified must remain open and under the Mozilla licence. 
+The screen of the graphical interface
+Each button and field on the screen has a popup window that describes its purpose, when the mouse stay up on it, and so understanding and using this interface is rather easy.
+ 
+Input fields
+The top text field allow to enter the path of the main file.
+The second field below, is to enter the url of the site, in the case a local path has been type in the first one. 
+Buttons
+GENERATE
+Build a site map according to the selected format, from options.
+CHECK
+Verify the file is well-formed.
+For a Xml file, validating is discussed further.
+VIEW MAP
+View the file in an editor. You can change values or remove links here.
+CLEAR
+Clean the screen.
+Options
+In the panel of options at right you can thick if you choose to generate additional tags: priority, date of last modification of the page, and frequency of changes.
+Map format
+Here you can choose among three format:
+- XML: This is a standard XML file for Google, Yahoo, MSN...
+- Text: This is just a text file with the list of all pages. It is valid for Google also.
+- HTML: This is a web page to display on the site, from which visitors can select a page to view.
+Verbose
+Thick this option if you wan more details displayed when a map is generated. This info is displayed into the large, blank fields of results.
+Priority tag
+Thick this case to include a priority tag. This tag has sense only if you edit the map to change value for some pages.
+The priority value is 0.5, that means for no priority. You can edit this value further for each page. This is a relative priority for the robot. The value is in the range 0.1 to 1. If you want to change this value, give higher value for more important pages.
+Last modification date tag
+The date is taken from the date of the file. It allows Google to ignore a page previously indexed if is not modified from the last visit of Googlebot.
+If this option is selected, two more choice become available:
+- Date: the date only of the last modification.
+- Time: the date plus the time of the last modification.
+Frequency change tag
+The frequency is taken from the value at right on the same line, than you may change by selecting a value in the list.
+The frequency for some pages may be changed at editing also.
+
+Results
+The big text field will display the results of the processes.
+Error messages are sent here.
+
+Which format to choose?
+1) If your site if well referenced by Google, with all pages indexed, then ignore the XML site map.
+The XML site map helps only google to index your site.
+You can know how Google and other search engines view you site by typing in the search field:
+site:www.mysite.com 
+This lists all links on your site and you can discovers missing pages.
+Of course, replace "mysite.com" by the name of your site.
+The Xml site map is convenient to register a site at Google with info on change frequency and priority. And registering at Google is useful when:
+your site is not correctly indexed,
+you want to reorganize it,
+your site is entirely new and not indexed yet.
+The drawback of site map registering is that you must register again at Google when new pages are added to your site.
+2) A text site map is informative mainly for you. It may be submitted at Google also and provide minimal infos on the site, that may be sufficient anyway. Other search engines can use it.
+
+3) The HTML site map is universal. It is suitable for any search engine. You have to put a link from you main page (preferably at top) and it allows visitors to know your site and find what they search. And search engines in the same manner.
+View Site Map
+ 
+
+Buttons
+Close: Close the windows.
+Save map: Save the map in place, and check it.
+Save map as: Save the map at a new location or under a new name, and check it.
+Using the program at command line
+You can use the smap.exe binary executable directly.
+smap [options] top-page 
+You can use also the Scriptol to Php compiler if Php is installed, and launch the program with this command:
+solp smap [options] top-page 
+Available options are these:
+
+- l include the date of last modification (for XML map).
+-p include the priority tag (for XML map).
+-f include the changefreq tag (for XML map).
+-v verbose, more message.
+-t produce a text file map (default is XML).
+-h produce a HTML file map.
+The value of change frequency is assigned inside the smap.ini file.
+Once the map generated, if it is in Xml format, you can check if it is well-formed with the xcheck.exe program, included in the archive.
+xcheck sitemap.xml 
+1.
+Validating the site map
+Once the map checked, it should be correct for the engine to parse it.
+If you have modified the map and want to be sure it is valid, use a validator online, before to register it at Google.
+You need for these files:
+sitemap.xml
+sitemap.xsd
+Validating the site map file may be performed locally (preferable), or directly on you site once the two files have been uploaded.
+See on the web site for links on validators. 
+Uploading the map
+Upload the file at root of your web site. In the same directory that the index.html or index.php page.
+Registering the site map
+The map in the sitemap.xml or sitemap.txt file have to be registered at this address:
+http://www.google.com/webmasters/sitemaps/
+Compiling the source
+You need for a Scriptol compiler if you want to change the smap.sol source file and produce an executable.
+Scriptol compilers and instructions of use are available here:
+http://www.scriptol.com
+
+
+(c) 2006-2007 by Denis G. Sureau – www.scriptol.com
+You can print and distribute freely this document unchanged 
+Don't put it on your site, but link it instead
