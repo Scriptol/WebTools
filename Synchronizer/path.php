@@ -1,7 +1,7 @@
 <?php
 
 //  Path Class
-//  Scriptol - (c) 2001-2005  D.G Sureau
+//  Scriptol - (c) 2001-2016  D.G Sureau
 //  www.scriptol.com
 //  Licence: OSS
 //  This is a set of static functions related to files in directory

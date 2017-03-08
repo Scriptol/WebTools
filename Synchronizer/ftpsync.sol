@@ -1,30 +1,28 @@
 # PHP FTP Synchronizer 
-# (c) 2007-2015 Scriptol.com. By Kim Haskell & Denis Sureau
+# (c) 2007-2017 Scriptol.com. By Kim Haskell & Denis Sureau
 # Free under the GNU GPL 2 License.
 # Requires the PHP 5 interpreter.
-# Sources are compiled with the Scriptol to PHP compiler version 7.0.
-# Libraries (c) by Denis Sureau
-# www.scriptol.com 
+# Compiling the sources require the Scriptol 2 to PHP compiler.
 #
 # The synchronizer updates a website from a local directory.
 # - It is able to use techniques to increase the speed.
 # - Optionally links in the pages sent are checked.
 # Read the manual for details of use.
-#
+
 
 include "path.sol"
 include "ftp.sol"
 include "linkcheck.sol"
-//include "feed.sol"
+include "sitemap.sol"
 
-boolean CHECKMODE = false   // True for virtual operations
-boolean QUIET = false     // True to display nothing
-boolean BACKUP = false    // True to work with a backup directory
-boolean ANYFILES = false  // restoring the site and uploading the full content
-boolean TOUCHFLAG = true  // server of back supports the touch function (accelarator)
-boolean CONTFLAG = false  // compare by content, not by time
-boolean DAYSFLAG = false  // upload files changed within n days
-boolean SKIPPED = false   // display skipped files
+bool CHECKMODE = false   // True for virtual operations
+bool BACKUP = false    // True to work with a backup directory
+bool ANYFILES = false  // restoring the site and uploading the full content
+bool TOUCHFLAG = true  // server of back supports the touch function (accelarator)
+bool CONTFLAG = false  // compare by content, not by time
+bool DAYSFLAG = false  // upload files changed within n days
+bool SKIPPED = false   // display skipped files
+bool MAPFLAG = false   // process site map or not
 
 int days = 0        // Number of past days to handle for updating 
 text server = "" 	// The ftp address
@@ -34,41 +32,38 @@ array params = []
 text backdir = ""   // backup directory or drive
 text temporary = "temporary-file.000.tmp"
 
-int connection = 0	// handler
+int connection = null	// handler
 int counter         // Number of files uploaded
 int falsecounter    // Number of files to copy
 int problem
 
 
-
 void usage()
 	print
-	print "FTP Synchronizer 2.0 - (c) 2007-2015 Scriptol.com"
-	print "-------------------------------------------------"
+	print "PHP FTP Synchronizer 3.1 - (c) 2007-2017 Scriptol.com"
+	print "-----------------------------------------------------"
 	print "Syntax:"
 	print "  solp ftpsync [options] source ftpadr"
 	print "Options:"
-	print "  -t test, display only and do nothing."
+	print "  -t test, display only and do nothing on the server."
 	print "  -v verbose, display more infos."
 	print "  -q quiet, display nothing."	
-	print "  -a all files, restore the full site"
-	print "  -c compare contents, ignore time"
+	print "  -a all files, restore the full site."
+	print "  -c compare contents, ignore time."
 	print "  -w website url (for the link checker)."
-	print "  -ndays number of days to upload."
+	print "  -ndays number of past days to upload."
 	print "  -ppassword."
 	print "  -llogin."
-	print "  -fftpadr ftp address in any form."
+	print "  -fftpadr remote adr in the form ftp.domain.tld (as ftp.scriptol.com)"
 	print "  -ddirectory remote directory where to upload the files."
 	print "  -bbackup, defining a backup directory"  
     print "Extended options"
 	print "  -u activate the link checker."
-    //print "  -r activate the RSS generator. Name and size optional."	
+	print "  -m update the XML site map."
 	print "  -k display skipped files."
     print "Arguments:"
 	print "  source: a directory to backup"
-	print "  ftpadr: remote adr in the form ftp.domain.tld (as ftp.scriptol.com)"
-	print "You will be prompted for each omitted but required parameter."
-	print "Optionally you will be prompted to add a valid document as RSS item."
+	print "You will be prompted for each parameter omitted but required."
 	print "See manual for compatibily between options."
 	exit(0)
 return
@@ -76,18 +71,18 @@ return
 
 boolean syncConnect()
 	connection = ftp_connect(server)
-	if connection = 0 let die("Not connected")
+	if connection < 1 let die("Error, no connection to $server as $user...")
 	
 	if ftp_login(connection, user, pass) = true
 		print "Connected on $server as $user"
 		if ftp_pasv(connection, true) = true
-		  print "Passive mode turned on"
+		    print "Passive mode turned on"
 		else
-      print "Enable to set passive mode"
-    /if    
+            print "Enable to set passive mode"
+        /if    
 		return true
 	else	
-		print "Enable to connect as $user on $server"
+		print "Enable to log as $user on $server"
 	/if
 return false
 
@@ -152,6 +147,14 @@ void checkRemote(text rpath)
   TOUCHFLAG = touch(rpath, time())
 return         
 
+// For sitemap the URL, full site url + remote path - domaine 
+
+text buildURL(text rempath)
+    int rd = rdlength      // remove domain from remote path
+    text url = rempath[ rd .. ]
+    url = Path.merge(website, url)
+return url
+
 
 // send a file
 
@@ -173,14 +176,16 @@ void filecopy(text src, text rmt, text loc)
 	/if
 
     if CHECKLINKS let linkCheckerDiffered(src)
+    if MAPFLAG
+        text ext = Path.getExtension(src)
+        if ext in sitemapExtensions
+            text mapentry = buildURL(rmt)
+            if mapentry <> mapremote let urlList.push(mapentry)
+        /if
+    /if    
+
     boolean putres
-    ~~
-        try {
-    ~~     
     putres = ftp_put(connection, rmt, src, $(FTP_BINARY))
-    ~~
-    } catch(Exception $e) { ;  }
-    ~~
     if putres = true
 		counter + 1
 		if BACKUP = true  
@@ -246,7 +251,7 @@ void synchro(text locdir, text bdir, text hostdir)
 	boolean returned
 	
 	if hostdir <> nil
-	  if VERBOSE or CHECKMODE 
+	  if VERBOSE 
       echo "Creating $hostdir if needed"
       if BACKUP echo ", and $bdir"
       print
@@ -282,10 +287,11 @@ void synchro(text locdir, text bdir, text hostdir)
 			
 			if ANYFILES = true     // uploading the full content
 			    filecopy(src, rmt, "")
+			    if MAPFLAG let addToMap(name)
 				continue
 			/if
 
-            // .htaccess and such files can't be read and are ignored
+            // .htaccess and such files must be uploaded manually and are ignored
                      
             if name[0] = "."     
                 if not QUIET print name, "skipped"
@@ -376,7 +382,7 @@ void processCommand(int argnum, array arguments)
 		else
 			usage()
 		/if	
-		
+
 		if opt = "-t" 
 			CHECKMODE = true
 			continue
@@ -416,33 +422,12 @@ void processCommand(int argnum, array arguments)
             CHECKLINKS = true 
 			continue
 		/if
-/*        
-        if opt = "-r"
-            text a, b
-            RSSFEED = true
-   			text x = param[ 2 .. ]
-   			if x = "" continue
-            int i = x.find(",")
-            if i = -1
-               a = x[.. i]
-               b = x[i + 1 ..]
-            else
-               a = x
-               b = ""
-            /if
-            if intval(a) <> 0
-                FEEDNAME = a
-                if intval(b) <> 0
-                    FEEDSIZE = intval(b)
-                /if    
-            else
-                FEEDSIZE = intval(a)
-                if b <> "" let FEEDNAME = b
-            /if               
-            
-            continue
-        /if            	        	
-*/
+		
+		if opt = "-m"
+            MAPFLAG = true 
+			continue
+		/if		
+
 		if opt = "-p"
 			pass = param[ 2 .. ]
 			if pass = nil let die("-p must be followed by the password.")
@@ -467,7 +452,6 @@ void processCommand(int argnum, array arguments)
 			continue
 		/if
 
-
 		if opt = "-n" 
 			daystring = param[ 2 .. ]
 			if daystring = "" let die("-n requires a number of days.")
@@ -479,6 +463,14 @@ void processCommand(int argnum, array arguments)
 		if opt = "-d" 
 			remotedir = param[ 2 .. ]
 			if remotedir = nil let die("-d requires a sub-directory.")
+			// For sitemap
+			rdlength = remotedir.length()
+			// Some adjustement when we update only a subdirectory
+			int p = remotedir.find("/")
+			if p > -1
+			    int l2 = remotedir[ p ..].length()
+			    rdlength - l2
+			/if
 			continue
 		/if	
     	
@@ -495,9 +487,9 @@ void processCommand(int argnum, array arguments)
 		/if	
 		
 		if param[0] = "-" 
-        print "Unknown command $param"  
-        usage()
-    /if   
+        	print "Unknown command $param"  
+        	usage()
+    	/if   
 		
 		if source = nil
 			source = param
@@ -524,15 +516,6 @@ void processCommand(int argnum, array arguments)
 
 	if pass = nil input "Password: ", pass	
 	if pass = nil let exit(0)
-	
-	params["server"] = server
-	params["user"] = user
-	params["pass"] = pass
-	params["source"] = source
-	params["backdir"] = backdir
-	params["days"] = days
-	params["remdir"] = remotedir
-	params["website"] = website
 
 return
 
@@ -540,18 +523,10 @@ return
 int main(int argc, array argv)
 
 	array x = argv[ 1 .. ]
-	
+	server = "" 
 	processCommand(argc, x)
 
     problem = 0
-    server = params["server"]
-    user = params["user"]
-    pass = params["pass"]
-    source = params["source"]
-    backdir = params["backdir"]
-    days = params["days"]
-    website = params["website"]
-    remotedir = params["remdir"]
     
     // Building the base URL for link check
     if website = nil
@@ -575,11 +550,25 @@ int main(int argc, array argv)
                 print "last day"
             /if  
         /if     
-        print "Source directory: $source"
+        print "Source directory:", source
         print "Remote directory:", remotedir
-        if BACKUP = true print "Backup location: $backdir"
-        if ANYFILES = true print "Website will be restored"
-        if CHECKLINKS print "Link checker active"
+        if BACKUP = true print "Backup location:", backdir
+        if ANYFILES = true print "Website will be restored."
+        if CHECKLINKS 
+            print "Link checker active."
+            if function_exists("curl_init") 
+                print "Curl active."
+             else
+                print "Curl not supported, enable it in php.ini."
+            /if    
+        /if  
+        if MAPFLAG
+            mapremote = Path.merge(website, mapname)
+            mapname = Path.merge(source, mapname)
+            text mntemp = setURL(mapname)
+            print "Sitemap:  $mntemp will be updated."
+        /if
+        
     /if
 
 	syncConnect()
@@ -602,10 +591,16 @@ int main(int argc, array argv)
 	print "."
 	if problem > 0 print "$problem file" + plural(problem) , "skipped."
 	
-	if CHECKLINKS 
+    if MAPFLAG and counter > 0
+        updateMap()
+    /if 
+
+	if CHECKLINKS and counter > 0
        differedCheck()
-       if counter > 0 let dispBroken()
-    /if    
+       dispBroken()
+    /if  
+    
+	print "Done." 
 	
 return 0
 

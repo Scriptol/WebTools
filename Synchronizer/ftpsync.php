@@ -1,29 +1,27 @@
 <?php
 // PHP FTP Synchronizer
-// (c) 2007-2015 Scriptol.com. By Kim Haskell & Denis Sureau
+// (c) 2007-2017 Scriptol.com. By Kim Haskell & Denis Sureau
 // Free under the GNU GPL 2 License.
 // Requires the PHP 5 interpreter.
-// Sources are compiled with the Scriptol to PHP compiler version 7.0.
-// Libraries (c) by Denis Sureau
-// www.scriptol.com
+// Compiling the sources require the Scriptol 2 to PHP compiler.
 //
 // The synchronizer updates a website from a local directory.
 // - It is able to use techniques to increase the speed.
 // - Optionally links in the pages sent are checked.
 // Read the manual for details of use.
-//
 
 include_once("path.php");
 include_once("ftp.php");
 include_once("linkcheck.php");
+include_once("sitemap.php");
 $CHECKMODE=false;
-$QUIET=false;
 $BACKUP=false;
 $ANYFILES=false;
 $TOUCHFLAG=true;
 $CONTFLAG=false;
 $DAYSFLAG=false;
 $SKIPPED=false;
+$MAPFLAG=false;
 $days=0;
 $server="";
 $user="";
@@ -31,38 +29,37 @@ $pass="";
 $params=array();
 $backdir="";
 $temporary="temporary-file.000.tmp";
-$connection=0;
+$connection=intVal(null);
 $counter=0;
 $falsecounter=0;
 $problem=0;
 function usage()
 {
    echo "\n";
-   echo "FTP Synchronizer 2.0 - (c) 2007-2015 Scriptol.com", "\n";
-   echo "-------------------------------------------------", "\n";
+   echo "PHP FTP Synchronizer 3.1 - (c) 2007-2017 Scriptol.com", "\n";
+   echo "-----------------------------------------------------", "\n";
    echo "Syntax:", "\n";
    echo "  solp ftpsync [options] source ftpadr", "\n";
    echo "Options:", "\n";
-   echo "  -t test, display only and do nothing.", "\n";
+   echo "  -t test, display only and do nothing on the server.", "\n";
    echo "  -v verbose, display more infos.", "\n";
    echo "  -q quiet, display nothing.", "\n";
-   echo "  -a all files, restore the full site", "\n";
-   echo "  -c compare contents, ignore time", "\n";
+   echo "  -a all files, restore the full site.", "\n";
+   echo "  -c compare contents, ignore time.", "\n";
    echo "  -w website url (for the link checker).", "\n";
-   echo "  -ndays number of days to upload.", "\n";
+   echo "  -ndays number of past days to upload.", "\n";
    echo "  -ppassword.", "\n";
    echo "  -llogin.", "\n";
-   echo "  -fftpadr ftp address in any form.", "\n";
+   echo "  -fftpadr remote adr in the form ftp.domain.tld (as ftp.scriptol.com)", "\n";
    echo "  -ddirectory remote directory where to upload the files.", "\n";
    echo "  -bbackup, defining a backup directory", "\n";
    echo "Extended options", "\n";
    echo "  -u activate the link checker.", "\n";
+   echo "  -m update the XML site map.", "\n";
    echo "  -k display skipped files.", "\n";
    echo "Arguments:", "\n";
    echo "  source: a directory to backup", "\n";
-   echo "  ftpadr: remote adr in the form ftp.domain.tld (as ftp.scriptol.com)", "\n";
-   echo "You will be prompted for each omitted but required parameter.", "\n";
-   echo "Optionally you will be prompted to add a valid document as RSS item.", "\n";
+   echo "You will be prompted for each parameter omitted but required.", "\n";
    echo "See manual for compatibily between options.", "\n";
    exit(0);
    return;
@@ -73,9 +70,9 @@ function syncConnect()
    global $connection;
    global $server;
    $connection=ftp_connect($server);
-   if($connection===0)
+   if($connection<1)
    {
-      die("Not connected");
+      die("Error, no connection to $server as $user...");
    }
    global $user;
    global $pass;
@@ -94,7 +91,7 @@ function syncConnect()
    }
    else
    {
-      echo "Enable to connect as $user on $server", "\n";
+      echo "Enable to log as $user on $server", "\n";
    }
    return false;
 }
@@ -185,6 +182,16 @@ function checkRemote($rpath)
    return;
 }
 
+function buildURL($rempath)
+{
+   global $rdlength;
+   $rd=$rdlength;
+   $url=substr($rempath,$rd);
+   global $website;
+   $url=Path::merge($website,$url);
+   return $url;
+}
+
 function filecopy($src,$rmt,$loc)
 {
    global $CHECKMODE;
@@ -214,15 +221,25 @@ function filecopy($src,$rmt,$loc)
    {
       linkCheckerDiffered($src);
    }
+   global $MAPFLAG;
+   if($MAPFLAG)
+   {
+      $ext=Path::getExtension($src);
+      global $sitemapExtensions;
+      if(in_array($ext,$sitemapExtensions))
+      {
+         $mapentry=buildURL($rmt);
+         global $mapremote;
+         if($mapentry!=$mapremote)
+         {
+            global $urlList;
+            array_push($urlList,$mapentry);
+         }
+      }
+   }
    $putres=0;
-   
-        try {
-    
    global $connection;
    $putres=ftp_put($connection,$rmt,$src,FTP_BINARY);
-   
-    } catch(Exception $e) { ;  }
-    
    if($putres===true)
    {
       global $counter;
@@ -326,8 +343,7 @@ function synchro($locdir,$bdir,$hostdir)
    if($hostdir!="")
    {
       global $VERBOSE;
-      global $CHECKMODE;
-      if($VERBOSE||$CHECKMODE)
+      if($VERBOSE)
       {
          echo "Creating $hostdir if needed";
          global $BACKUP;
@@ -337,6 +353,7 @@ function synchro($locdir,$bdir,$hostdir)
          }
          echo "\n";
       }
+      global $CHECKMODE;
       if(!$CHECKMODE)
       {
                   global $connection;
@@ -383,6 +400,11 @@ function synchro($locdir,$bdir,$hostdir)
          if($ANYFILES===true)
          {
             filecopy($src,$rmt,"");
+            global $MAPFLAG;
+            if($MAPFLAG)
+            {
+               addToMap($name);
+            }
             continue;
          }
          if($name{0}===".")
@@ -558,6 +580,12 @@ function processCommand($argnum,$arguments)
          $CHECKLINKS=true;
          continue;
       }
+      if($opt==="-m")
+      {
+         global $MAPFLAG;
+         $MAPFLAG=true;
+         continue;
+      }
       if($opt==="-p")
       {
          global $pass;
@@ -618,6 +646,15 @@ function processCommand($argnum,$arguments)
          if($remotedir==="")
          {
             die("-d requires a sub-directory.");
+         }
+         global $rdlength;
+         $rdlength=strlen($remotedir);
+
+         $p=strpos($remotedir,"/");
+         if($p>-1)
+         {
+            $l2=strlen(substr($remotedir,$p));
+            $rdlength-=$l2;
          }
          continue;
       }
@@ -707,47 +744,19 @@ function processCommand($argnum,$arguments)
    {
       exit(0);
    }
-   global $params;
-   $params["server"]=$server;
-   $params["user"]=$user;
-   $params["pass"]=$pass;
-   $params["source"]=$source;
-   global $backdir;
-   $params["backdir"]=$backdir;
-   global $days;
-   $params["days"]=$days;
-   global $remotedir;
-   $params["remdir"]=$remotedir;
-   global $website;
-   $params["website"]=$website;
-
    return;
 }
 
 function main($argc,$argv)
 {
    $x=array_slice($argv,1);
+   global $server;
+   $server="";
    processCommand($argc,$x);
    global $problem;
    $problem=0;
-   global $server;
-   global $params;
-   $server=$params["server"];
-   global $user;
-   $user=$params["user"];
-   global $pass;
-   $pass=$params["pass"];
-   global $source;
-   $source=$params["source"];
-   global $backdir;
-   $backdir=$params["backdir"];
-   global $days;
-   $days=intVal($params["days"]);
-   global $website;
-   $website=$params["website"];
-   global $remotedir;
-   $remotedir=$params["remdir"];
 
+   global $website;
    if($website==="")
    {
       $website=preg_replace("/^ftp/i","http://www",$server,1);
@@ -776,6 +785,7 @@ function main($argc,$argv)
       if($DAYSFLAG)
       {
          echo "Update files changed ";
+         global $days;
          if($days>0)
          {
             echo "within", " ", var_export($days+1,true), " ", "days", "\n";
@@ -785,26 +795,50 @@ function main($argc,$argv)
             echo "last day", "\n";
          }
       }
-      echo "Source directory: $source", "\n";
+      global $source;
+      echo "Source directory:", " ", $source, "\n";
+      global $remotedir;
       echo "Remote directory:", " ", $remotedir, "\n";
       global $BACKUP;
       if($BACKUP===true)
       {
-         echo "Backup location: $backdir", "\n";
+         global $backdir;
+         echo "Backup location:", " ", $backdir, "\n";
       }
       global $ANYFILES;
       if($ANYFILES===true)
       {
-         echo "Website will be restored", "\n";
+         echo "Website will be restored.", "\n";
       }
       global $CHECKLINKS;
       if($CHECKLINKS)
       {
-         echo "Link checker active", "\n";
+         echo "Link checker active.", "\n";
+         if(function_exists("curl_init"))
+         {
+            echo "Curl active.", "\n";
+         }
+         else
+         {
+            echo "Curl not supported, enable it in php.ini.", "\n";
+         }
+      }
+      global $MAPFLAG;
+      if($MAPFLAG)
+      {
+         global $mapremote;
+         global $mapname;
+         $mapremote=Path::merge($website,$mapname);
+         $mapname=Path::merge($source,$mapname);
+         $mntemp=setURL($mapname);
+         echo "Sitemap:  $mntemp will be updated.", "\n";
       }
    }
    syncConnect();
    echo "Synchronizing $source on $server", "\n";
+   global $source;
+   global $backdir;
+   global $remotedir;
    synchro($source,$backdir,$remotedir);
    syncDisconnect();
    if($QUIET)
@@ -831,15 +865,18 @@ function main($argc,$argv)
    {
       echo "$problem file".($problem>1?"s":""), " ", "skipped.", "\n";
    }
+   global $MAPFLAG;
+   if($MAPFLAG&&$counter>0)
+   {
+      updateMap();
+   }
    global $CHECKLINKS;
-   if($CHECKLINKS)
+   if($CHECKLINKS&&$counter>0)
    {
       differedCheck();
-      if($counter>0)
-      {
-         dispBroken();
-      }
+      dispBroken();
    }
+   echo "Done.", "\n";
    return 0;
 }
 

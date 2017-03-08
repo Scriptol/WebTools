@@ -5,21 +5,23 @@
 // Licence: LPGL
 // Check an HTML page for broken links
 //
-// (c) 2008-2015 by Denis Sureau. Scriptol.com
+// (c) 2008-2016 by Denis Sureau. Scriptol.com
 //
 include_once("dom.php");
+include_once("path.php");
 $CHECKLINKS=false;
 $VERBOSE=false;
+$QUIET=false;
 $DEBUG=false;
 $website="";
-$domain="";
 $source="";
 $remotedir="";
+$rdlength=0;
 $broken=array("Links report:");
 $pagesToCheck=array();
 $brocount=0;
-$extensions=array(".html",".php",".htm",".php3",".php4",".php5",".asp",".shtml",".dhtml",".jsp",".xhtml",".stm");
-function sockAccess($url)
+$extensions=array(".html",".php",".htm",".php5",".asp",".shtml",".dhtml",".jsp",".xhtml",".stm");
+function httpAccess($url)
 {
    $errno="";
    $errstr="";
@@ -75,6 +77,35 @@ function sockAccess($url)
       }
    }
    return $icode;
+}
+
+function httpsAccess($url)
+{
+   if(strlen($url)<9)
+   {
+      return 0;
+   }
+   $headers=0;
+   $code=0;
+   
+    if(function_exists("curl_init")) {
+        $c = curl_init();
+        curl_setopt($c, CURLOPT_CONNECTTIMEOUT, 300);
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($c, CURLOPT_VERBOSE, false);
+        curl_setopt($c, CURLOPT_URL, $url);
+        curl_setopt($c, CURLOPT_HEADER, true);
+        curl_setopt($c, CURLOPT_NOBODY, true);
+        curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+        $headers = curl_exec($c);
+        $code = curl_getinfo($c, CURLINFO_HTTP_CODE);
+        curl_close($c);
+    }
+    else {
+        return(0);
+    }
+    
+   return intVal($code);
 }
 
 function convertUnix($src)
@@ -157,6 +188,7 @@ function linkchecker($page)
    $xres=0;
    $link="";
    $base="";
+   $resnum=0;
    $links=array();
    if(!isHTML($page))
    {
@@ -177,9 +209,8 @@ function linkchecker($page)
    $base=str_replace($root,$website,$base);
 
    $d=new DOMDocument();
-
    
-    $xres = @$d->loadHTMLFile($page);
+    @$xres = $d->loadHTMLFile($page);
     
    if($xres===false)
    {
@@ -253,7 +284,14 @@ function linkchecker($page)
    $HEADFLAG=true;
    foreach($links as $link)
    {
-      $resnum=sockAccess($link);
+      if(substr($link,0,8)==="https://")
+      {
+         $resnum=httpsAccess($link);
+      }
+      else
+      {
+         $resnum=httpAccess($link);
+      }
       if($resnum===200)
       {
          continue;
@@ -315,7 +353,7 @@ function differedCheck()
    {
       return;
    }
-   echo "Checking links...", "\n";
+   echo "\nChecking links...", "\n";
    global $pagesToCheck;
    foreach($pagesToCheck as $t)
    {

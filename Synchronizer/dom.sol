@@ -1,17 +1,26 @@
 /**
-	PHP Implementation of DOM official
+	PHP Implementation of W3C DOM official
 	Fully compatible with PHP, requires Scriptol PHP
-	This interface (c) 2007-2014 Denis Sureau - LPGL
-	
-	This is not compatible with the current dom library of Scriptol C++.
+	This interface (c) 2007-2016 Denis Sureau - LPGL license
 */
 
 extern
 
-class DOMElement
+class DOMNode 
+	text nodeName          // the tag name
+	text nodeValue         // its content
+	DOMNode firstChild
+	DOMNode lastChild
+    DOMNode previousSibling
+    DOMNode nextSibling
+	DOMNode parentNode
+	DOMNode appendChild(DOMNode)
+	DOMNode removeChild(DOMNode)
+	DOMNode replaceChild(DOMNode, DOMNode)  // new is first parameter
+/class
 
-	cstring textContent
-
+class DOMElement is DOMNode
+	text textContent
 	boolean hasAttribute(cstring)
 	cstring getAttribute(cstring)
 	boolean setAttribute(cstring, cstring)
@@ -25,18 +34,16 @@ class DOMText
 	DOMText splitText()
 /class
 
-class DOMNode
-	DOMNode appendChild(DOMNode)
-	DOMNode removeChild(DOMNode)
-	text nodeValue         // the content
-/class
-
 class DOMNodeList
 	DOMNode item(integer)
 	int length             // the number of elements
 /class
 
 class DOMDocument
+    DOMDocument DOMDocument(cstring = null, cstring = null)
+    
+    bool formatOutput
+    bool preserveWhiteSpace
 
 	boolean loadHTMLFile(cstring)	// Load a HTML file
 	boolean loadHTML(cstring)		// Create HTML from the raw content of a string
@@ -53,9 +60,14 @@ class DOMDocument
 	
 	DOMText createTextNode (cstring)
 	DOMNode appendChild(DOMNode)
-	DOMElement createElement(cstring)	// Create an orphan DOMElement, use appendChild
+	DOMElement createElement(cstring, cstring = null)	// Create an orphan DOMElement, use appendChild
 	DOMComment createComment(cstring)	// Create an orphan DOMComment
 
+/class
+
+class DOMXPath
+    var evaluate(text, DOMNode = null, bool = true)
+    DOMNodeList query(text, DOMNode = null, bool = true)
 /class
 
 /extern

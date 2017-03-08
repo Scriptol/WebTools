@@ -4,33 +4,37 @@
 # Licence: LPGL
 # Check an HTML page for broken links
 #
-# (c) 2008-2015 by Denis Sureau. Scriptol.com
+# (c) 2008-2016 by Denis Sureau. Scriptol.com
 #
 
 include "dom.sol"
+include "path.sol"
 
 boolean CHECKLINKS = false
 boolean VERBOSE = false   // True to display more details
+bool QUIET = false     // True to display nothing
 boolean DEBUG = false     // even more verbose
 
 text website = ""   // the website base URL (protocol, domain, tld)
-text domain = ""    // website without protocol
 text source = ""	// local directory at start
 text remotedir = "" // sub-directory on the remote server but not in the public URL
+int rdlength = 0
 
 array broken = ["Links report:"]   // list of pages and broken links
 array pagesToCheck = []
 int brocount = 0
 
-array extensions = [".html", ".php", ".htm", ".php3", ".php4", ".php5", ".asp",
+array extensions = [".html", ".php", ".htm", ".php5", ".asp",
     ".shtml", ".dhtml", ".jsp", ".xhtml", ".stm"]
 
 
 // Obtain the HTTP status code for a given web page
 // 200=OK  301=redirect 302= temp redirect ignored 404=missing
-// All the codes on http://www.scriptol.org/dictionary/http-code.php
+// All the codes are on http://www.scriptol.org/dictionary/http-code.php
 
-int sockAccess(text url)
+// For http
+
+int httpAccess(text url)
   text errno
   text errstr
   text page
@@ -45,7 +49,7 @@ int sockAccess(text url)
     site = url[7 ..]
     page = "/"
   else  
-    site =  url[7 -- l]
+    site = url[7 -- l]
     page = url[ l .. ]
   /if  
   
@@ -75,6 +79,32 @@ int sockAccess(text url)
   /if  
 
 return icode
+
+// For https
+
+int httpsAccess(text url)
+    if url.length() < 9 return 0  
+    var headers
+    var code
+    ~~
+    if(function_exists("curl_init")) {
+        $c = curl_init();
+        curl_setopt($c, CURLOPT_CONNECTTIMEOUT, 300);
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, true); 
+        curl_setopt($c, CURLOPT_VERBOSE, false);
+        curl_setopt($c, CURLOPT_URL, $url);        
+        curl_setopt($c, CURLOPT_HEADER, true);
+        curl_setopt($c, CURLOPT_NOBODY, true);
+        curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+        $headers = curl_exec($c);
+        $code = curl_getinfo($c, CURLINFO_HTTP_CODE);
+        curl_close($c);
+    }
+    else {
+        return(0);
+    }
+    ~~    
+return code
 
 
 // change formats
@@ -127,12 +157,12 @@ boolean isHTML(text name)
 return false
 
 void linkchecker(text page)
-
     DOMNode current = null
     DOMElement elem = null
     boolean xres
     text link
     text base
+    int resnum
   
     array links = {}
   
@@ -146,11 +176,9 @@ void linkchecker(text page)
     base = str_replace(root, website, base)
  
     DOMDocument d = DOMDocument()
-  
     ~~
-    $xres = @$d->loadHTMLFile($page);
-    ~~  
-  
+    @$xres = $d->loadHTMLFile($page);
+    ~~
     if xres = false return 
  
     DOMNodeList dnl = d.getElementsByTagName("a")
@@ -190,7 +218,12 @@ void linkchecker(text page)
     if links.size() = 0 return  
     boolean HEADFLAG = true
     for link in links
-        int resnum = sockAccess(link)
+        if link[ .. 7] = "https://"	
+            resnum = httpsAccess(link)
+        else
+            resnum = httpAccess(link)
+        /if    
+        
         if resnum = 200 continue
         if resnum = 302 continue
         if HEADFLAG
@@ -223,7 +256,7 @@ return
 
 void differedCheck()
     if not CHECKLINKS return
-    print "Checking links..."
+    print "\nChecking links..."
     for text t in pagesToCheck
         linkchecker(t)
     /for    

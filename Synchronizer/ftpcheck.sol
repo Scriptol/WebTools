@@ -1,5 +1,5 @@
 # FTP Checker 1.1
-# (c) 2007-2010 By Kim Haskell/Denis Sureau
+# (c) 2007-2016 By Kim Haskell/Denis Sureau
 # Requires the PHP interpreter.
 # Sources are compiled with the Scriptol to PHP compiler version 7.0.
 # www.scriptol.com 
@@ -7,10 +7,9 @@
 # The script checks your ftp connection:
 # - You can upload a file.
 # - You can change date for a file (this may help to update).
-#
+
 
 include "path.sol"
-include "dirlist.sol"
 include "ftp.sol"
 
 boolean DISPLAY = false   // True for virtual operations
@@ -80,7 +79,7 @@ return remfile
 
 void usage()
 	print
-	print "FTP Check 1.0 - (c) 2007-2011 Kim Haskell Scriptol.com"
+	print "FTP Check 1.0 - (c) 2007-2016 Kim Haskell Scriptol.com"
 	print "------------------------------------------------------"
 	print "Syntax:"
 	print "  php ftpcheck.php [options] source [ftp]"
@@ -107,13 +106,9 @@ void processCommand(int argnum, array arguments)
 	
 	source = nil
 
-	if argnum <  2
-		usage()
-	/if	
-
+	if argnum <  2 ? usage()
 
 	for text param in arguments
-
 		if param.length() > 1
 			opt = param[..1]
 		else
@@ -144,9 +139,9 @@ void processCommand(int argnum, array arguments)
 		/if	
 		
 		if param[0] = "-" 
-      print "Unknown command $param"  
-      usage()
-    /if   
+      		print "Unknown command $param"  
+      		usage()
+    	/if   
 		
 		if source = nil
 			source = param
@@ -154,8 +149,7 @@ void processCommand(int argnum, array arguments)
 		/if	
 		
 		print "Unknown command $param"
-    
-    usage()
+    	usage()
 		
 	/for
 
@@ -173,34 +167,15 @@ void processCommand(int argnum, array arguments)
 	if pass = nil input "Password: ", pass	
 	if pass = nil let exit(0)
 	
-	params["server"] = server
-	params["user"] = user
-	params["pass"] = pass
-	params["source"] = source
-	params["remdir"] = remotedir
-
 return
 
-
 int main(int argc, array argv)
-
 	array x = argv[ 1 .. ]
-	
 	processCommand(argc, x)
-
-    server = params["server"]
-    user = params["user"]
-    pass = params["pass"]
-    source = params["source"]
-  
 	syncConnect()
-	
-	text filename = checkUpload(source, params["remdir"])
-  
+	text filename = checkUpload(source, remotedir)
 	syncDelete(filename)
-	
 	syncDisconnect()
-	
 return 0
 
 main($argc, $argv)
