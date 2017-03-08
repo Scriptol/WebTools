@@ -1,0 +1,191 @@
+<!DOCTYPE HTML>
+<html><head>
+<meta charset=UTF-8>
+<title>Manual of PHP FTP Synchronizer by Kim Haskell</title>
+<meta name="GENERATOR" content="OpenOffice.org 2.2  (Win32)"><meta name="CREATED" content="20070917;20271100"><meta name="CHANGED" content="20080614;17053876">
+<style type="text/css">
+	body { margin:48px; }
+	@page { size: 21cm 29.7cm; margin: 2cm }
+	P { margin-bottom: 0.21cm }
+	H1 { margin-bottom: 0.21cm; color: #006699; }
+	H1.cjk { font-family: "MS Mincho"; font-size: 16pt }
+	H1.ctl { font-family: "Tahoma"; font-size: 16pt }
+	H2 { margin-top: 0.42cm; margin-bottom: 0.41cm; color: #336699; page-break-before: auto; page-break-after: auto }
+	H2.cjk { font-family: "Arial"; font-size: 14pt; font-style: italic }
+	H2.ctl { font-family: "Arial Unicode MS"; font-size: 14pt; font-style: italic }
+</style>
+</head>
+<body lang="en-US" dir="LTR">
+<br>
+<h1 class="western" align="CENTER"><font color="#94bd5e"><font face="Rondalo"><font size="7" style="font-size: 32pt">PHP
+FTP Synchronizer</font></font></font></h1>
+<p align="CENTER" style="margin-bottom: 0cm">By Kim Haskell</p>
+<p align="CENTER" style="margin-bottom: 0cm">&copy; 2007-2016 Kim
+Haskell, <a href="http://www.scriptol.com/">Scriptol.com</a>,
+<a href="http://www.scriptol.fr/">Scriptol.fr</a></p>
+<p align="CENTER" style="margin-bottom: 0cm">Free software under open
+source GNU LPG 2.0 license 
+</p>
+<p style="margin-bottom: 0cm"><br></p>
+<h2>What is PHP FTP Synchronizer?</h2>
+<p>It is a software for transferring file on a Web site, working in
+an automatic way, to update the contents of the site from file
+created locally on a personal computer.</p>
+<p style="margin-bottom: 0cm">It detects the modifications and
+transfers modified files.</p>
+<p style="margin-bottom: 0cm">It is possible in option to transfer
+the files published since a certain number of days.</p>
+<h2>Who addresses PHP FTP Synchronizer?</h2>
+<p style="margin-bottom: 0cm">To webmasters who realize a Web site
+locally and then upload the pages on the server.</p>
+<p style="margin-bottom: 0cm">It is not thus appropriate for those
+which work directly on line on the site and in particular those whose
+site is managed entirely by a CMS.</p>
+<p style="margin-bottom: 0cm">The software can nevertheless function
+if one uses static pages along with content management systems such
+as forums but it operates only on the static part.</p>
+<h2>How the software works</h2>
+<p style="margin-bottom: 0cm">One passes to the software the required
+parameters: FTP address, login, password, remote directory, source
+directory. The source directory is recursively scanned with its
+sub-directories, contents are compared with remote contents, and
+modified files are uploaded on the site.</p>
+<p style="margin-bottom: 0cm">The main options of acceleration are as
+follows:</p>
+<ul style="margin-bottom: 0cm">
+  <li><p style="margin-bottom: 0cm">One indicates a number of days
+	spent, and all the files modified during these last days are
+	transferred without comparison with the remote contents.</p>
+  </li>
+<li>One uses a local directory for
+	backup. Instead of comparing the files with the remote site, which
+	is very slow, one compares them with the contents of the backup what
+	is instantaneous, and one updates at the same time the backup and
+	the site.<br>
+</li>
+</ul>
+<h2>How the program is used</h2>
+<p style="margin-bottom: 0cm">The program is used at command l line,
+in DOS window or an Unix console.</p>
+<p style="margin-bottom: 0cm">It is recommended to create a batch
+file (.BAT under Windows) to avoid typing the options with each use.</p>
+<p style="margin-bottom: 0cm">One can then add an icon on the
+desktop, which launches this command file, and on which one clicks to
+update each modification of a file.</p>
+<p style="margin-bottom: 0cm">In a personal environment one can place
+all the options in the file batch.</p>
+<p style="margin-bottom: 0cm">In a collective environment, it is not
+advised to put the password in the file. It should be asked by the
+program at runtime instead.</p>
+<h2>Two operational modes</h2>
+<p style="margin-bottom: 0cm">Two modes of operation are possible,
+with additional options:</p>
+<ol style="margin-bottom: 0cm">
+  <li><p style="margin-bottom: 0cm">Transfer according to the
+	period.<br>In this case all the files modified the very same day or
+	since a given number of days, are transferred on the server. The
+	backup directory becomes optional then.</p>
+  </li><li><p style="margin-bottom: 0cm">Associated transfer and
+	backup.<br>The files are compared with the contents of a backup
+	directory. Those whose date (at the second near), are more recent
+	are copied to the server and also in the backup directory. In the
+	backup, original date and time are applied to the copy (for further
+	comparison). 
+	</p>
+</li></ol>
+<p style="margin-bottom: 0cm">It is possible also without using
+backup, to compare the files with those which are stored on the
+server, but the operation is extremely slow.</p>
+<h2>Syntax of the command line</h2>
+<p>The command has the form:</p>
+<p style="margin-left: 1.25cm">solp ftpsync [options] [parameters]
+sourcedir [URL] 
+</p>
+<p>or directly in PHP:</p>
+<p style="margin-left: 1.25cm">php ftpsync.php [options] [parameters]
+sourcedir URL</p>
+<p>The parameters allow to give the login, the password, etc. If a
+required parameter misses, the program prompt for it.</p>
+<p>The options define the mode of update and what one wants to
+display at runtime. When an option misses, the default option is
+used.</p>
+<p>The URL is the FTP address, in the &ldquo;ftp . scriptol .com&rdquo;
+form. If it is omitted, the program asks it.</p>
+<p><u>Options and parameters</u></p>
+<p><b>- t</b> Test mode, the program
+proceeds virtually and displays what it would do. But nothing is
+modified neither on the server, nor in the backup directory. By
+defect the mode is real.</p>
+<p><b>- ndays</b> Last days mode. The
+code -n is followed by a number of days: 0 for today, 1 for yesterday
+and so on. All that is modified in the <span style="text-decoration: none">given
+</span>period, today, yesterday or during the n last days, is
+uploaded on the server. 
+</p>
+<p><b>- bbackup</b> Defines the backup
+directory and states consequently that one chooses the backup mode.
+The date of files is compared with that of files in this directory,
+the more recent files are uploaded on the server. &ldquo;Date&rdquo;
+actually means the exact moment in seconds.<br>If this option is
+omitted, the program will compare the files with those which are on
+the server. The transfer is very slow and could be interrupted by the
+server.</p>
+<p><b>-ddirectory </b>Defines the
+directory on the server, in which one copies the files. Often the
+site is in a www directory. It is then necessary to add this option:</p>
+<pre><span style="text-decoration: none"><b>-dwww/</b> Define the sub-directory. </span> </pre>
+<p>On a multi-domain hosting, it is
+necessary to indicate the name of the directory associated with a
+domain. The directory is the same one as that which one uses with a
+FTP transfer software.<br>
+This directory is not part of the URL given to the browser. </p>
+<p><b>- llogin </b>Defines the login.
+If - l is specified but that nothing follows, the program display an
+error message. But if the option is not given, the program will
+prompt for the login at runtime.</p>
+<p><b>- ppassword </b>Defines the
+password. Works like for the login. If you are working in a
+collective environment, do not put the password in a command file. It
+is better to enter it when the program ask for it.</p>
+<p><b>-c</b> For a comparison of
+contents rather than on dates. That is done with the backup directory
+and is of course slower than the comparison by date, which is the
+default option.</p>
+<p><b>-a</b> Upload all the files to
+restore the site, no comparison is made. If a backup directory is
+given, the files will be also copied in this directory.</p>
+<p><b>-v </b>Verbose mode. Display more
+details about what is done.</p>
+<p><b>-q</b> <span style="text-decoration: none">Quiet
+Mode. Do not display anything about action of the program.</span></p>
+<p><u>Options for link check</u></p>
+<p>It is possible (since version 1.3) for each page loaded on the
+server, to test the links it contains, in order to avoid broken
+links, whether internal or external links. <br>Two options have been
+added to activate the checking: <br><b>-u</b> Activation of the test.
+<br><b>-wsite </b>Indicate the domain of the site. <br><br>The URL of
+the site is necessary for relative internal links, to rebuild an
+absolute URL. <br>If the ftp address is also that of the site, the
+option-w is superfluous, the ftp URL will be transformed into http.
+This is not the case with sites sharing the same host, we must
+specify the domain of the site.</p>
+<p><u>Option for site map</u></p>
+<p>The site map is automatically updated with any page is put online. If the page is already referenced,  only the date will be updated. The frequency and priority are not changed.</p>
+<p><b>-m</b> Enable updating the site map. </p>
+<h2>Conclusion</h2>
+<p>PHP FTP Synchronizer is an
+extensible program. If you are even a beginner in programming, you
+can easily add options in the source.<br>In the event of problem to
+use PHP FTP Synchronizer, do not hesitate to post on the forum in the
+language of your choice, S<span style="text-decoration: none">criptol.com
+in English, </span>Scriptol.fr in French.</p>
+<p style="margin-bottom: 0cm"><br></p>
+<div id="sea">
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script><script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-6574971-2");
+pageTracker._trackPageview();
+} catch(err) {}</script></div></body></html>
