@@ -12,4 +12,4 @@ Contributions are welcomed.
 
 Source code in Scriptol is compiled to PHP (or JavaScript if the same functions are supported).
 
-Manual on http://www.scriptol.com/webmaster/
+Manual on https://www.scriptol.com/webmaster/
